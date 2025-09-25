@@ -20,14 +20,12 @@ struct ContentView: View {
                 .font(.largeTitle)
                 .bold()
 
-            // Username
             TextField("Username", text: $username)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding(.horizontal)
                 .autocapitalization(.none)
                 .autocorrectionDisabled(true)
 
-            // Email
             TextField("Email", text: $email)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding(.horizontal)
@@ -35,14 +33,12 @@ struct ContentView: View {
                 .keyboardType(.emailAddress)
                 .autocorrectionDisabled(true)
 
-            // Password
             SecureField("Password", text: $password)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding(.horizontal)
                 .autocapitalization(.none)
                 .autocorrectionDisabled(true)
 
-            // Sign Up button
             Button("Sign Up") {
                 signUp()
             }
@@ -53,7 +49,6 @@ struct ContentView: View {
             .cornerRadius(10)
             .padding(.horizontal)
 
-            // Login button
             Button("Sign In") {
                 logIn()
             }
@@ -64,7 +59,6 @@ struct ContentView: View {
             .cornerRadius(10)
             .padding(.horizontal)
 
-            // Logout button
             Button("Sign Out") {
                 logOut()
             }
@@ -75,21 +69,18 @@ struct ContentView: View {
             .cornerRadius(10)
             .padding(.horizontal)
 
-            // Feedback message
             Text(message)
                 .foregroundColor(.blue)
                 .padding()
         }
         .padding()
         .onAppear {
-            // Auto-login check
             if let currentUser = User.current {
                 message = "Hello, \(currentUser.username ?? "")"
             }
         }
     }
 
-    // MARK: - Sign Up
     private func signUp() {
         var newUser = User()
         newUser.username = username
@@ -106,7 +97,6 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Log In
     private func logIn() {
         User.login(username: username, password: password) { result in
             switch result {
@@ -118,7 +108,6 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Log Out
     private func logOut() {
         User.logout { result in
             switch result {

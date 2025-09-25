@@ -10,6 +10,10 @@ import ParseSwift
 
 @main
 struct BeRealClonePt1App: App {
+    @State private var showSplash = true
+
+    private let splashMinDuration: UInt64 = 2_500_000_000
+
     init() {
         ParseSwift.initialize(
             applicationId: "pyTXM7vg2hyR4Q9bAlwrerpGFpBbduYBCsbcQa1g",
@@ -20,33 +24,44 @@ struct BeRealClonePt1App: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            Group {
+                if showSplash {
+                    SplashView()
+                        .transition(.opacity)
+                } else {
+                    RootView()
+                        .transition(.opacity)
+                }
+            }
+            .task {
+                try? await Task.sleep(nanoseconds: splashMinDuration)
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    showSplash = false
+                }
+            }
         }
     }
 }
 
-// MARK: - Router
-struct RootView: View {
-    @State private var isLoggedIn: Bool = (User.current != nil)
 
+struct SplashView: View {
     var body: some View {
-        Group {
-            if isLoggedIn {
-                FeedView()
-            } else {
-                AuthView()
+        ZStack {
+            Color(.systemBackground).ignoresSafeArea()
+
+            VStack(spacing: 12) {
+                Image("LaunchLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .shadow(radius: 6, y: 2)
+
+                Text("BeReal Clone")
+                    .font(.system(size: 28, weight: .bold))
+
+                ProgressView()
+                    .padding(.top, 6)
             }
-        }
-        // listen for auth state changes
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("login"))) { _ in
-            isLoggedIn = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("signout"))) { _ in
-            isLoggedIn = false
-        }
-        .onAppear {
-            // persisted session check on cold launch
-            isLoggedIn = (User.current != nil)
         }
     }
 }
