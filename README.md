@@ -39,9 +39,10 @@ https://www.loom.com/share/40fef9803e3b490d8c39d96512597512?sid=0c51e311-2a61-45
 
 ## Notes
 
-
-- Launch screen via storyboard/asset was inconsistent on my Xcode; I used a SwiftUI splash fallback so graders still see a styled startup.
-- Backend: Back4App with ParseSwift SDK.
+**Launch screen issue:** The launch screen didn’t show at first. What fixed it:
+- In **TARGETS → Info**, set **“Launch screen interface file base name”** to `LaunchScreen`.
+- Added basic **Auto Layout** constraints to center the label/logo so it renders on all devices.
+- The Simulator caches launch screens; uninstalling the app or using **Erase All Content and Settings** made changes appear.
 
 ## License
 
