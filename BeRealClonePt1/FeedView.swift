@@ -7,28 +7,25 @@
 
 import SwiftUI
 import ParseSwift
+import CoreLocation
 
 struct FeedView: View {
     @State private var posts: [Post] = []
     @State private var status: String = ""
-    @State private var loading = false
-    @State private var showComposer = false
+    @State private var showingComposer = false
+
+    // RootView watches this
+    @AppStorage("isLoggedIn") private var isLoggedIn = true
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Group {
-                if loading && posts.isEmpty {
-                    ProgressView("Loading…")
-                        .padding()
-                } else if !status.isEmpty && posts.isEmpty {
-                    Text(status)
-                        .foregroundStyle(.secondary)
-                        .padding()
+                if posts.isEmpty && !status.isEmpty {
+                    Text(status).foregroundColor(.secondary)
                 } else {
                     List(posts) { post in
                         PostRow(post: post)
                             .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
                     }
                     .listStyle(.plain)
                     .refreshable { fetchPosts() }
@@ -36,34 +33,34 @@ struct FeedView: View {
             }
             .navigationTitle("Feed")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Sign Out") { signOut() }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        showComposer = true
+                        showingComposer = true
                     } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .imageScale(.large)
+                        Image(systemName: "plus.circle.fill").imageScale(.large)
                     }
-                    .accessibilityLabel("New post")
                 }
             }
+            .task { fetchPosts() }
+            .sheet(isPresented: $showingComposer, onDismiss: { fetchPosts() }) {
+                PostComposerView()
+            }
         }
-        .sheet(isPresented: $showComposer, onDismiss: fetchPosts) {
-            PostComposerView()
-        }
-        .onAppear { fetchPosts() }
     }
 
+    // MARK: - Data
     private func fetchPosts() {
         status = "Loading…"
-        loading = true
-
-        let q = Post.query()
-            .include("user")
-            .order([.descending("createdAt")])
+        let q = Post
+            .query()
+            .include("user")                    // fetch author relationship
+            .order([.descending("createdAt")])  // newest first
 
         q.find { result in
             DispatchQueue.main.async {
-                loading = false
                 switch result {
                 case .success(let fetched):
                     posts = fetched
@@ -74,82 +71,85 @@ struct FeedView: View {
             }
         }
     }
+
+    // MARK: - Auth
+    private func signOut() {
+        User.logout { _ in
+            DispatchQueue.main.async {
+                isLoggedIn = false   // flips RootView back to AuthView
+            }
+        }
+    }
 }
 
 // MARK: - Row
 private struct PostRow: View {
     let post: Post
+    private static let df: DateFormatter = {
+        let d = DateFormatter()
+        d.dateStyle = .medium
+        d.timeStyle = .short
+        return d
+    }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-
+        VStack(alignment: .leading, spacing: 8) {
+            // Header
             HStack {
-                Text(post.authorUsername ?? post.user?.username ?? "Anonymous")
+                Text(post.authorUsername ?? (post.user?.username ?? "Anonymous"))
                     .font(.headline)
                 Spacer()
                 if let date = post.takenAt ?? post.createdAt {
                     Text(Self.df.string(from: date))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundColor(.secondary)
+                        .font(.caption)
                 }
             }
 
-            if let file = post.imageFile,
-               let url = file.url {
-                
+            // Image
+            if let file = post.imageFile, let url = file.url {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .empty:
                         ZStack {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(Color.gray.opacity(0.12))
+                                .frame(height: 220)
                             ProgressView()
                         }
-                        .frame(maxWidth: .infinity, minHeight: 240)
-
-                    case .success(let image):
-                        image.resizable()
+                    case .success(let img):
+                        img
+                            .resizable()
                             .scaledToFill()
-                            .frame(maxWidth: .infinity, minHeight: 240)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-
+                            .frame(maxWidth: .infinity, minHeight: 220, maxHeight: 380)
+                            .clipped()
+                            .cornerRadius(12)
                     case .failure:
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.gray.opacity(0.12))
-                            Image(systemName: "photo")
-                                .imageScale(.large)
-                                .foregroundStyle(.secondary)
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 240)
-
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.red.opacity(0.1))
+                            .frame(height: 220)
+                            .overlay(Text("Failed to load image").foregroundColor(.secondary))
                     @unknown default:
                         EmptyView()
                     }
                 }
             }
 
+            // Caption
             if let caption = post.caption, !caption.isEmpty {
                 Text(caption)
-                    .font(.body)
             }
 
+            // Location
             if let name = post.locationName, !name.isEmpty {
                 HStack(spacing: 6) {
                     Image(systemName: "mappin.and.ellipse")
                     Text(name)
                 }
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundColor(.secondary)
+                .font(.caption)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
     }
-
-    private static let df: DateFormatter = {
-        let df = DateFormatter()
-        df.dateStyle = .medium
-        df.timeStyle = .short
-        return df
-    }()
 }

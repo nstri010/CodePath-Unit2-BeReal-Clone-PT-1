@@ -9,24 +9,14 @@ import SwiftUI
 import ParseSwift
 
 struct RootView: View {
-    @State private var isLoggedIn = (User.current != nil)
+
+    @AppStorage("isLoggedIn") private var isLoggedIn: Bool = (User.current != nil)
 
     var body: some View {
-        Group {
-            if isLoggedIn {
-                FeedView()
-            } else {
-                AuthView()
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("login"))) { _ in
-            isLoggedIn = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("logout"))) { _ in
-            isLoggedIn = false
-        }
-        .onAppear {
-            isLoggedIn = (User.current != nil)
+        if isLoggedIn && User.current != nil {
+            FeedView()
+        } else {
+            AuthView()
         }
     }
 }
