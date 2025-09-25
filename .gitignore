@@ -70,3 +70,12 @@ xcuserdata/
 DerivedData/
 build/
 
+
+# macOS
+.DS_Store
+
+# Xcode user files
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
